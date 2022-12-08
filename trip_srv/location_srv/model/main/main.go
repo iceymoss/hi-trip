@@ -1,0 +1,57 @@
+package main
+
+import (
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+	"gorm.io/gorm/schema"
+
+	"hi-trip/trip_srv/location_srv/model"
+	"log"
+	"os"
+	"time"
+)
+
+func main() {
+	dsn := "root:Qq/2013XiaoKUang@tcp(127.0.0.1:3306)/blog_go?charset=utf8mb4&parseTime=True&loc=Local"
+
+	//用于输出使用的sql语句
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer（日志输出的目标，前缀和日志包含的内容——译者注）
+		logger.Config{
+			SlowThreshold:             time.Second, // 慢 SQL 阈值
+			LogLevel:                  logger.Info, // 日志级别
+			IgnoreRecordNotFoundError: true,        // 忽略ErrRecordNotFound（记录未找到）错误
+			Colorful:                  true,        // 禁用彩色打印
+		},
+	)
+
+	//打开mysql服务中对应的数据库
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+	NamingStrategy: schema.NamingStrategy{
+	SingularTable: true,
+	},
+	Logger: newLogger,
+	})
+	if err != nil {
+	panic(err)
+	}
+
+	err = db.AutoMigrate(model.KeywordSrv{})
+	if err != nil {
+		panic(err)
+	}
+
+	var location model.KeywordSrv
+	location.Region = "北京"
+	location.KayWord = "火锅"
+	location.Longitude = 3.348454
+	location.Latitude = 3.344434
+	location.UserID = 2
+	tx := db.Save(&location)
+	if tx.RowsAffected == 0 {
+		panic(err)
+	}
+
+}
+
